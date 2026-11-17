@@ -16,6 +16,13 @@ from src.services.users import (
     ExpiredActivationTokenError,
     resend_activation_token,
 )
+from src.schemas.auth import UserLoginSchema, TokenResponseSchema
+
+from src.services.auth import (
+    login_user,
+    InvalidCredentialsError,
+    InactiveAccountError,
+)
 
 
 router = APIRouter(
@@ -117,3 +124,36 @@ async def resend_activation(
             "a new activation email has been sent."
         )
     }
+
+
+@router.post(
+    "/login/",
+    response_model=TokenResponseSchema,
+    summary="Login user",
+    description=(
+        "Authenticates an active user and returns "
+        "JWT access and refresh tokens."
+    ),
+    responses={
+        401: {"description": "Invalid credentials"},
+        403: {"description": "Account is not activated"},
+    },
+)
+async def login(
+    data: UserLoginSchema,
+    session: AsyncSession = Depends(get_db),
+):
+    try:
+        return await login_user(data, session)
+
+    except InvalidCredentialsError as error:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(error),
+        ) from error
+
+    except InactiveAccountError as error:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(error),
+        ) from error
