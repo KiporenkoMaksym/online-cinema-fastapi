@@ -5,3 +5,4 @@ from src.database.models.users import (
     UserGroup,
     UserGroupEnum,
 )
+from src.database.models.movies import Movie

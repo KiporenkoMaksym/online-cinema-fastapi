@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 from src.database.base import Base
-import src.database.models
+import src.database.models.movies
 from src.database.session import settings
 
 # this is the Alembic Config object, which provides
