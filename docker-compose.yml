@@ -17,5 +17,54 @@ services:
       timeout: 5s
       retries: 5
 
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: online_cinema_mailhog
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+
+  redis:
+    image: redis:7-alpine
+    container_name: online_cinema_redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    image: online-cinema-celery:local
+    container_name: online_cinema_worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://cinema_user:cinema_local_password@db:5432/online_cinema
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    command: celery -A src.tasks.celery_app:celery_app worker --loglevel=info
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  celery_beat:
+    image: online-cinema-celery:local
+    container_name: online_cinema_beat
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://cinema_user:cinema_local_password@db:5432/online_cinema
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    command: celery -A src.tasks.celery_app:celery_app beat --loglevel=info
+    depends_on:
+      - celery_worker
+
 volumes:
   postgres_data:
