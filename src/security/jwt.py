@@ -76,3 +76,21 @@ def create_refresh_token(user_id: int) -> str:
 
 def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def decode_refresh_token(token: str) -> dict:
+    payload = jwt.decode(
+        token,
+        settings.JWT_SECRET_KEY,
+        algorithms=[settings.JWT_ALGORITHM],
+        options={
+            "require": ["sub", "exp", "type", "jti"]
+        },
+    )
+
+    if payload.get("type") != "refresh":
+        raise jwt.InvalidTokenError(
+            "Invalid token type"
+        )
+
+    return payload

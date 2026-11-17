@@ -16,12 +16,21 @@ from src.services.users import (
     ExpiredActivationTokenError,
     resend_activation_token,
 )
-from src.schemas.auth import UserLoginSchema, TokenResponseSchema
-
+from src.schemas.auth import (
+    UserLoginSchema,
+    TokenResponseSchema,
+    RefreshTokenRequestSchema,
+    AccessTokenResponseSchema,
+)
+from src.security.dependencies import get_current_user
+from src.database.models.users import User
 from src.services.auth import (
     login_user,
+    refresh_access_token,
+    logout_user,
     InvalidCredentialsError,
     InactiveAccountError,
+    InvalidRefreshTokenError,
 )
 
 
@@ -157,3 +166,48 @@ async def login(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(error),
         ) from error
+
+
+@router.post(
+    "/logout/",
+    status_code=status.HTTP_200_OK,
+    summary="Logout user",
+    description=(
+        "Revokes the provided refresh token, "
+        "preventing it from being used again."
+    ),
+    responses={
+        401: {"description": "Invalid or revoked refresh token"},
+    },
+)
+async def logout(
+    data: RefreshTokenRequestSchema,
+    session: AsyncSession = Depends(get_db),
+):
+    try:
+        await logout_user(
+            refresh_token=data.refresh_token,
+            session=session,
+        )
+
+    except InvalidRefreshTokenError as error:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(error),
+        ) from error
+
+    return {"message": "Successfully logged out"}
+
+
+@router.get(
+    "/me/",
+    summary="Get current user",
+)
+async def get_me(
+    current_user: User = Depends(get_current_user),
+):
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "is_active": current_user.is_active,
+    }

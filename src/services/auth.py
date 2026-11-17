@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-
+import jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,8 +10,13 @@ from src.security.jwt import (
     create_access_token,
     create_refresh_token,
     hash_token,
+    decode_refresh_token,
     settings,
 )
+
+
+class InvalidRefreshTokenError(Exception):
+    pass
 
 
 class InvalidCredentialsError(Exception):
@@ -67,3 +72,89 @@ async def login_user(
         "refresh_token": refresh_token,
         "token_type": "bearer",
     }
+
+
+async def logout_user(
+    refresh_token: str,
+    session: AsyncSession,
+) -> None:
+    try:
+        payload = decode_refresh_token(refresh_token)
+        user_id = int(payload["sub"])
+
+    except (jwt.InvalidTokenError, ValueError, KeyError) as error:
+        raise InvalidRefreshTokenError(
+            "Invalid or expired refresh token"
+        ) from error
+
+    token_hash = hash_token(refresh_token)
+
+    result = await session.execute(
+        select(RefreshToken).where(
+            RefreshToken.token == token_hash,
+            RefreshToken.user_id == user_id,
+        )
+    )
+
+    stored_token = result.scalar_one_or_none()
+
+    if stored_token is None:
+        raise InvalidRefreshTokenError(
+            "Refresh token not found or already revoked"
+        )
+
+    await session.delete(stored_token)
+    await session.commit()
+
+
+async def refresh_access_token(
+    refresh_token: str,
+    session: AsyncSession,
+) -> str:
+    try:
+        payload = decode_refresh_token(refresh_token)
+        user_id = int(payload["sub"])
+
+    except (jwt.InvalidTokenError, ValueError, KeyError) as error:
+        raise InvalidRefreshTokenError(
+            "Invalid or expired refresh token"
+        ) from error
+
+    token_hash = hash_token(refresh_token)
+
+    result = await session.execute(
+        select(RefreshToken).where(
+            RefreshToken.token == token_hash,
+            RefreshToken.user_id == user_id,
+        )
+    )
+
+    stored_token = result.scalar_one_or_none()
+
+    if stored_token is None:
+        raise InvalidRefreshTokenError(
+            "Refresh token not found or revoked"
+        )
+
+    expires_at = stored_token.expires_at
+
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+    if expires_at <= datetime.now(timezone.utc):
+        raise InvalidRefreshTokenError(
+            "Refresh token has expired"
+        )
+
+    result = await session.execute(
+        select(User).where(User.id == user_id)
+    )
+
+    user = result.scalar_one_or_none()
+
+    if user is None or not user.is_active:
+        raise InvalidRefreshTokenError(
+            "User not found or inactive"
+        )
+
+    return create_access_token(user.id)
