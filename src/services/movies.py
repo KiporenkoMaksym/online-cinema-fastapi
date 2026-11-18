@@ -7,6 +7,7 @@ from src.database.models.movies import Movie
 from src.schemas.movies import (
     MovieListItemSchema,
     MovieListResponseSchema,
+    MovieDetailSchema,
 )
 
 
@@ -50,3 +51,19 @@ async def get_movies(
         prev_page=prev_page,
         next_page=next_page,
     )
+
+
+async def get_movie_by_id(
+    session: AsyncSession,
+    movie_id: int,
+) -> MovieDetailSchema | None:
+    result = await session.execute(
+        select(Movie).where(Movie.id == movie_id)
+    )
+
+    movie = result.scalar_one_or_none()
+
+    if movie is None:
+        return None
+
+    return MovieDetailSchema.model_validate(movie)

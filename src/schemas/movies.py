@@ -14,6 +14,10 @@ class MovieListItemSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class MovieDetailSchema(MovieListItemSchema):
+    pass
+
+
 class MovieListResponseSchema(BaseModel):
     movies: list[MovieListItemSchema]
     total_items: int = Field(ge=0)
