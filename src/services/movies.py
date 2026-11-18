@@ -1,6 +1,8 @@
+from datetime import date
 from math import ceil
+from typing import Literal
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.models.movies import Movie
@@ -15,26 +17,81 @@ async def get_movies(
     session: AsyncSession,
     page: int = 1,
     per_page: int = 10,
+    search: str | None = None,
+    min_rating: float | None = None,
+    release_date_from: date | None = None,
+    release_date_to: date | None = None,
+    sort_by: Literal[
+        "id", "name", "release_date", "rating"
+    ] = "id",
+    sort_order: Literal["asc", "desc"] = "asc",
 ) -> MovieListResponseSchema:
+
+    filters = []
+    if search:
+        search_value = f"%{search.strip()}%"
+
+        filters.append(
+            or_(
+                Movie.name.ilike(search_value),
+                Movie.description.ilike(search_value),
+            )
+        )
+
+    if min_rating is not None:
+        filters.append(
+            Movie.rating >= min_rating
+        )
+
+    if release_date_from is not None:
+        filters.append(
+            Movie.release_date >= release_date_from
+        )
+
+    if release_date_to is not None:
+        filters.append(
+            Movie.release_date <= release_date_to
+        )
+
     count_result = await session.execute(
-        select(func.count(Movie.id))
+        select(func.count(Movie.id)).where(*filters)
     )
 
     total_items = count_result.scalar_one()
     total_pages = ceil(total_items / per_page)
 
+    sort_columns = {
+        "id": Movie.id,
+        "name": Movie.name,
+        "release_date": Movie.release_date,
+        "rating": Movie.rating,
+    }
+
+    sort_column = sort_columns[sort_by]
+
+    if sort_order == "desc":
+        sort_column = sort_column.desc()
+    else:
+        sort_column = sort_column.asc()
+
     offset = (page - 1) * per_page
 
     result = await session.execute(
         select(Movie)
-        .order_by(Movie.id)
+        .where(*filters)
+        .order_by(sort_column, Movie.id)
         .offset(offset)
         .limit(per_page)
     )
 
     movies = result.scalars().all()
 
-    prev_page = page - 1 if page > 1 else None
+    prev_page = (
+        page - 1
+        if 1 < page <= total_pages
+        else None
+    )
+
     next_page = (
         page + 1
         if page < total_pages
