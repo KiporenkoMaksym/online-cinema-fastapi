@@ -4,9 +4,11 @@ from typing import Literal
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.database.models import User
 from src.database.session import get_db
-from src.schemas.movies import MovieListResponseSchema, MovieDetailSchema
-from src.services.movies import get_movies, get_movie_by_id
+from src.schemas.movies import MovieListResponseSchema, MovieDetailSchema, MovieCreateSchema, MovieUpdateSchema
+from src.security.dependencies import get_current_moderator_or_admin
+from src.services.movies import get_movies, get_movie_by_id, create_movie, update_movie, delete_movie
 
 router = APIRouter(
     prefix="/api/v1/movies",
@@ -86,3 +88,66 @@ async def movie_details(
         )
 
     return movie
+
+
+@router.post(
+    "/",
+    response_model=MovieDetailSchema,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a movie",
+)
+async def create_movie_endpoint(
+    data: MovieCreateSchema,
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(
+        get_current_moderator_or_admin
+    ),
+):
+    return await create_movie(session, data)
+
+
+@router.put(
+    "/{movie_id}/",
+    response_model=MovieDetailSchema,
+    summary="Update a movie",
+)
+async def update_movie_endpoint(
+    movie_id: int,
+    data: MovieUpdateSchema,
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(
+        get_current_moderator_or_admin
+    ),
+):
+    movie = await update_movie(session, movie_id, data)
+
+    if movie is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Movie not found",
+        )
+
+    return movie
+
+
+@router.delete(
+    "/{movie_id}/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a movie",
+)
+async def delete_movie_endpoint(
+    movie_id: int,
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(
+        get_current_moderator_or_admin
+    ),
+):
+    deleted = await delete_movie(session, movie_id)
+
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Movie not found",
+        )
+
+    return None

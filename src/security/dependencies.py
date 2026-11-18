@@ -5,7 +5,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.database.models.users import User
+from src.database.models.users import User, UserGroupEnum, UserGroup
 from src.database.session import get_db
 from src.security.jwt import decode_access_token
 
@@ -43,3 +43,27 @@ async def get_current_user(
         raise unauthorized
 
     return user
+
+
+async def get_current_moderator_or_admin(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> User:
+    result = await session.execute(
+        select(UserGroup.name)
+        .join(User, User.group_id == UserGroup.id)
+        .where(User.id == current_user.id)
+    )
+
+    role = result.scalar_one_or_none()
+
+    if role not in (
+        UserGroupEnum.MODERATOR,
+        UserGroupEnum.ADMIN,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only moderators and admins can manage movies",
+        )
+
+    return current_user

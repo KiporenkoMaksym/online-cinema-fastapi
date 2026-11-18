@@ -9,7 +9,7 @@ from src.database.models.movies import Movie
 from src.schemas.movies import (
     MovieListItemSchema,
     MovieListResponseSchema,
-    MovieDetailSchema,
+    MovieDetailSchema, MovieUpdateSchema, MovieCreateSchema,
 )
 
 
@@ -124,3 +124,50 @@ async def get_movie_by_id(
         return None
 
     return MovieDetailSchema.model_validate(movie)
+
+
+async def create_movie(
+    session: AsyncSession,
+    data: MovieCreateSchema,
+) -> Movie:
+    movie = Movie(**data.model_dump())
+
+    session.add(movie)
+    await session.commit()
+    await session.refresh(movie)
+
+    return movie
+
+
+async def update_movie(
+    session: AsyncSession,
+    movie_id: int,
+    data: MovieUpdateSchema,
+) -> Movie | None:
+    movie = await session.get(Movie, movie_id)
+
+    if movie is None:
+        return None
+
+    for field, value in data.model_dump().items():
+        setattr(movie, field, value)
+
+    await session.commit()
+    await session.refresh(movie)
+
+    return movie
+
+
+async def delete_movie(
+    session: AsyncSession,
+    movie_id: int,
+) -> bool:
+    movie = await session.get(Movie, movie_id)
+
+    if movie is None:
+        return False
+
+    await session.delete(movie)
+    await session.commit()
+
+    return True
