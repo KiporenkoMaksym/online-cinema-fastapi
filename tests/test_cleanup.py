@@ -4,10 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-
-cleanup_module = importlib.import_module(
-    "src.tasks.cleanup"
-)
+cleanup_module = importlib.import_module("src.tasks.cleanup")
 
 
 @pytest.mark.asyncio
@@ -16,18 +13,12 @@ async def test_cleanup_expired_tokens(
 ):
     # Fake database connection
     connection = MagicMock()
-    connection.execute = AsyncMock(
-        return_value=SimpleNamespace(rowcount=3)
-    )
+    connection.execute = AsyncMock(return_value=SimpleNamespace(rowcount=3))
 
     # Fake engine
     engine = MagicMock()
-    engine.begin.return_value.__aenter__ = AsyncMock(
-        return_value=connection
-    )
-    engine.begin.return_value.__aexit__ = AsyncMock(
-        return_value=None
-    )
+    engine.begin.return_value.__aenter__ = AsyncMock(return_value=connection)
+    engine.begin.return_value.__aexit__ = AsyncMock(return_value=None)
     engine.dispose = AsyncMock()
 
     monkeypatch.setenv(
@@ -59,17 +50,11 @@ async def test_cleanup_when_no_expired_tokens(
     monkeypatch,
 ):
     connection = MagicMock()
-    connection.execute = AsyncMock(
-        return_value=SimpleNamespace(rowcount=0)
-    )
+    connection.execute = AsyncMock(return_value=SimpleNamespace(rowcount=0))
 
     engine = MagicMock()
-    engine.begin.return_value.__aenter__ = AsyncMock(
-        return_value=connection
-    )
-    engine.begin.return_value.__aexit__ = AsyncMock(
-        return_value=None
-    )
+    engine.begin.return_value.__aenter__ = AsyncMock(return_value=connection)
+    engine.begin.return_value.__aexit__ = AsyncMock(return_value=None)
     engine.dispose = AsyncMock()
 
     monkeypatch.setenv(
@@ -94,17 +79,11 @@ async def test_cleanup_disposes_engine_on_error(
     monkeypatch,
 ):
     connection = MagicMock()
-    connection.execute = AsyncMock(
-        side_effect=RuntimeError("Database error")
-    )
+    connection.execute = AsyncMock(side_effect=RuntimeError("Database error"))
 
     engine = MagicMock()
-    engine.begin.return_value.__aenter__ = AsyncMock(
-        return_value=connection
-    )
-    engine.begin.return_value.__aexit__ = AsyncMock(
-        return_value=None
-    )
+    engine.begin.return_value.__aenter__ = AsyncMock(return_value=connection)
+    engine.begin.return_value.__aexit__ = AsyncMock(return_value=None)
     engine.dispose = AsyncMock()
 
     monkeypatch.setenv(
@@ -133,11 +112,7 @@ def test_celery_cleanup_task(monkeypatch):
         mock_cleanup,
     )
 
-    result = (
-        cleanup_module
-        .delete_expired_activation_tokens
-        .run()
-    )
+    result = cleanup_module.delete_expired_activation_tokens.run()
 
     assert result == 2
     mock_cleanup.assert_awaited_once()

@@ -70,10 +70,12 @@ async def test_register_user_success(
         recipient: str,
         token: str,
     ):
-        sent_emails.append({
-            "recipient": recipient,
-            "token": token,
-        })
+        sent_emails.append(
+            {
+                "recipient": recipient,
+                "token": token,
+            }
+        )
 
     monkeypatch.setattr(
         "src.api.auth.send_activation_email",
@@ -96,9 +98,7 @@ async def test_register_user_success(
     assert data["is_active"] is False
 
     result = await db_session.execute(
-        select(User).where(
-            User.email == "newuser@example.com"
-        )
+        select(User).where(User.email == "newuser@example.com")
     )
 
     user = result.scalar_one_or_none()
@@ -107,9 +107,7 @@ async def test_register_user_success(
     assert user.is_active is False
 
     result = await db_session.execute(
-        select(ActivationToken).where(
-            ActivationToken.user_id == user.id
-        )
+        select(ActivationToken).where(ActivationToken.user_id == user.id)
     )
 
     activation = result.scalar_one_or_none()
@@ -155,24 +153,18 @@ async def test_register_duplicate_email(
 
     assert second_response.status_code == 409
 
-    assert second_response.json()["detail"] == (
-        "User with this email already exists"
-    )
+    assert second_response.json()["detail"] == ("User with this email already exists")
 
 
 @pytest.mark.asyncio
 async def test_activate_with_invalid_token(client):
     response = await client.get(
         "/api/v1/accounts/activate/",
-        params={
-            "token": "invalid-activation-token"
-        },
+        params={"token": "invalid-activation-token"},
     )
 
     assert response.status_code == 400
-    assert response.json()["detail"] == (
-        "Invalid activation token"
-    )
+    assert response.json()["detail"] == ("Invalid activation token")
 
 
 @pytest.mark.asyncio
@@ -286,9 +278,7 @@ async def test_cannot_reuse_activation_token(
     )
 
     assert second_response.status_code == 400
-    assert second_response.json()["detail"] == (
-        "Invalid activation token"
-    )
+    assert second_response.json()["detail"] == ("Invalid activation token")
 
 
 @pytest.mark.asyncio
@@ -321,15 +311,11 @@ async def test_expired_activation_token(
     assert len(tokens) == 1
 
     result = await db_session.execute(
-        select(ActivationToken).where(
-            ActivationToken.token == tokens[0]
-        )
+        select(ActivationToken).where(ActivationToken.token == tokens[0])
     )
 
     activation = result.scalar_one()
-    activation.expires_at = (
-        datetime.now(timezone.utc) - timedelta(hours=1)
-    )
+    activation.expires_at = datetime.now(timezone.utc) - timedelta(hours=1)
 
     await db_session.commit()
 
@@ -339,9 +325,7 @@ async def test_expired_activation_token(
     )
 
     assert response.status_code == 400
-    assert response.json()["detail"] == (
-        "Activation token has expired"
-    )
+    assert response.json()["detail"] == ("Activation token has expired")
 
 
 @pytest.mark.asyncio
@@ -427,9 +411,7 @@ async def test_resend_activation_unknown_email(
 
     response = await client.post(
         "/api/v1/accounts/resend-activation/",
-        json={
-            "email": "unknown@example.com"
-        },
+        json={"email": "unknown@example.com"},
     )
 
     assert response.status_code == 200

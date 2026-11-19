@@ -16,9 +16,7 @@ async def cleanup_expired_tokens() -> int:
     try:
         async with engine.begin() as connection:
             result = await connection.execute(
-                delete(ActivationToken).where(
-                    ActivationToken.expires_at <= func.now()
-                )
+                delete(ActivationToken).where(ActivationToken.expires_at <= func.now())
             )
 
             return result.rowcount
@@ -27,9 +25,7 @@ async def cleanup_expired_tokens() -> int:
         await engine.dispose()
 
 
-@celery_app.task(
-    name="src.tasks.cleanup.delete_expired_activation_tokens"
-)
+@celery_app.task(name="src.tasks.cleanup.delete_expired_activation_tokens")
 def delete_expired_activation_tokens() -> int:
     deleted_count = asyncio.run(cleanup_expired_tokens())
 

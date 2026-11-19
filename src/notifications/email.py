@@ -23,10 +23,7 @@ async def send_activation_email(
     recipient: str,
     token: str,
 ) -> None:
-    activation_link = (
-        f"{settings.BASE_URL}/api/v1/accounts/activate/"
-        f"?token={token}"
-    )
+    activation_link = f"{settings.BASE_URL}/api/v1/accounts/activate/" f"?token={token}"
 
     message = EmailMessage()
     message["From"] = settings.SMTP_FROM_EMAIL

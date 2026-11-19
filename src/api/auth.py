@@ -33,7 +33,6 @@ from src.services.auth import (
     InvalidRefreshTokenError,
 )
 
-
 router = APIRouter(
     prefix="/api/v1/accounts",
     tags=["Authentication"],
@@ -140,8 +139,7 @@ async def resend_activation(
     response_model=TokenResponseSchema,
     summary="Login user",
     description=(
-        "Authenticates an active user and returns "
-        "JWT access and refresh tokens."
+        "Authenticates an active user and returns " "JWT access and refresh tokens."
     ),
     responses={
         401: {"description": "Invalid credentials"},
@@ -173,8 +171,7 @@ async def login(
     status_code=status.HTTP_200_OK,
     summary="Logout user",
     description=(
-        "Revokes the provided refresh token, "
-        "preventing it from being used again."
+        "Revokes the provided refresh token, " "preventing it from being used again."
     ),
     responses={
         401: {"description": "Invalid or revoked refresh token"},

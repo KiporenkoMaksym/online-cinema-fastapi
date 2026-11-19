@@ -6,3 +6,12 @@ from src.database.models.users import (
     UserGroupEnum,
 )
 from src.database.models.movies import Movie
+
+__all__ = [
+    "ActivationToken",
+    "RefreshToken",
+    "User",
+    "UserGroup",
+    "UserGroupEnum",
+    "Movie",
+]

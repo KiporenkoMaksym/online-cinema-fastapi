@@ -32,9 +32,7 @@ def test_create_and_decode_refresh_token():
 
 @pytest.mark.asyncio
 async def test_get_me_without_token(client):
-    response = await client.get(
-        "/api/v1/accounts/me/"
-    )
+    response = await client.get("/api/v1/accounts/me/")
 
     assert response.status_code == 401
 
@@ -43,9 +41,7 @@ async def test_get_me_without_token(client):
 async def test_get_me_with_invalid_token(client):
     response = await client.get(
         "/api/v1/accounts/me/",
-        headers={
-            "Authorization": "Bearer invalid-token"
-        },
+        headers={"Authorization": "Bearer invalid-token"},
     )
 
     assert response.status_code == 401
@@ -55,9 +51,7 @@ async def test_get_me_with_invalid_token(client):
 async def test_refresh_with_invalid_token(client):
     response = await client.post(
         "/api/v1/accounts/token/refresh/",
-        json={
-            "refresh_token": "invalid-refresh-token"
-        },
+        json={"refresh_token": "invalid-refresh-token"},
     )
 
     assert response.status_code == 401
@@ -67,9 +61,7 @@ async def test_refresh_with_invalid_token(client):
 async def test_logout_with_invalid_token(client):
     response = await client.post(
         "/api/v1/accounts/logout/",
-        json={
-            "refresh_token": "invalid-refresh-token"
-        },
+        json={"refresh_token": "invalid-refresh-token"},
     )
 
     assert response.status_code == 401
@@ -129,9 +121,7 @@ async def test_full_authentication_flow(client, db_session):
     # 2. Get current user
     me_response = await client.get(
         "/api/v1/accounts/me/",
-        headers={
-            "Authorization": f"Bearer {access_token}"
-        },
+        headers={"Authorization": f"Bearer {access_token}"},
     )
 
     assert me_response.status_code == 200

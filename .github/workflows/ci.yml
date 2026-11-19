@@ -1,3 +1,4 @@
+
 name: Online Cinema CI
 
 on:
@@ -44,6 +45,18 @@ jobs:
         run: |
           poetry config virtualenvs.create false
           poetry install --no-root --with dev --no-interaction
+
+      - name: Check formatting with Black
+        run: |
+          black --check src tests
+
+      - name: Lint with Flake8
+        run: |
+          flake8 src tests --max-line-length=88 --extend-ignore=E203,W503
+
+      - name: Type check with mypy
+        run: |
+          mypy src --ignore-missing-imports
 
       - name: Run tests with coverage
         run: |

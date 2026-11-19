@@ -6,9 +6,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.models import User
 from src.database.session import get_db
-from src.schemas.movies import MovieListResponseSchema, MovieDetailSchema, MovieCreateSchema, MovieUpdateSchema
+from src.schemas.movies import (
+    MovieListResponseSchema,
+    MovieDetailSchema,
+    MovieCreateSchema,
+    MovieUpdateSchema,
+)
 from src.security.dependencies import get_current_moderator_or_admin
-from src.services.movies import get_movies, get_movie_by_id, create_movie, update_movie, delete_movie
+from src.services.movies import (
+    get_movies,
+    get_movie_by_id,
+    create_movie,
+    update_movie,
+    delete_movie,
+)
 
 router = APIRouter(
     prefix="/api/v1/movies",
@@ -35,9 +46,7 @@ async def list_movies(
     ),
     release_date_from: date | None = None,
     release_date_to: date | None = None,
-    sort_by: Literal[
-        "id", "name", "release_date", "rating"
-    ] = "id",
+    sort_by: Literal["id", "name", "release_date", "rating"] = "id",
     sort_order: Literal["asc", "desc"] = "asc",
     session: AsyncSession = Depends(get_db),
 ):
@@ -99,9 +108,7 @@ async def movie_details(
 async def create_movie_endpoint(
     data: MovieCreateSchema,
     session: AsyncSession = Depends(get_db),
-    current_user: User = Depends(
-        get_current_moderator_or_admin
-    ),
+    current_user: User = Depends(get_current_moderator_or_admin),
 ):
     return await create_movie(session, data)
 
@@ -115,9 +122,7 @@ async def update_movie_endpoint(
     movie_id: int,
     data: MovieUpdateSchema,
     session: AsyncSession = Depends(get_db),
-    current_user: User = Depends(
-        get_current_moderator_or_admin
-    ),
+    current_user: User = Depends(get_current_moderator_or_admin),
 ):
     movie = await update_movie(session, movie_id, data)
 
@@ -138,9 +143,7 @@ async def update_movie_endpoint(
 async def delete_movie_endpoint(
     movie_id: int,
     session: AsyncSession = Depends(get_db),
-    current_user: User = Depends(
-        get_current_moderator_or_admin
-    ),
+    current_user: User = Depends(get_current_moderator_or_admin),
 ):
     deleted = await delete_movie(session, movie_id)
 
