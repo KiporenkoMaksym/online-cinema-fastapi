@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     )
 
 
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]
 
 engine = create_async_engine(
     settings.DATABASE_URL,

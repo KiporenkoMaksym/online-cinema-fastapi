@@ -3,7 +3,6 @@ import os
 from celery import Celery
 from celery.schedules import crontab
 
-
 celery_app = Celery(
     "online_cinema",
     broker=os.getenv(

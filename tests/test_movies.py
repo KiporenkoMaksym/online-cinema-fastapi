@@ -77,9 +77,7 @@ async def test_get_movie_catalog(
 
 @pytest.mark.asyncio
 async def test_movie_not_found(client):
-    response = await client.get(
-        "/api/v1/movies/999999/"
-    )
+    response = await client.get("/api/v1/movies/999999/")
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Movie not found"
@@ -87,18 +85,14 @@ async def test_movie_not_found(client):
 
 @pytest.mark.asyncio
 async def test_invalid_pagination(client):
-    response = await client.get(
-        "/api/v1/movies/?page=0&per_page=10"
-    )
+    response = await client.get("/api/v1/movies/?page=0&per_page=10")
 
     assert response.status_code == 422
 
 
 @pytest.mark.asyncio
 async def test_per_page_limit(client):
-    response = await client.get(
-        "/api/v1/movies/?page=1&per_page=100"
-    )
+    response = await client.get("/api/v1/movies/?page=1&per_page=100")
 
     assert response.status_code == 422
 
@@ -125,9 +119,7 @@ async def test_search_movies(client, db_session):
     db_session.add_all(movies)
     await db_session.commit()
 
-    response = await client.get(
-        "/api/v1/movies/?search=interstellar"
-    )
+    response = await client.get("/api/v1/movies/?search=interstellar")
 
     assert response.status_code == 200
     assert response.json()["total_items"] == 1
@@ -154,9 +146,7 @@ async def test_filter_movies_by_rating(client, db_session):
     db_session.add_all(movies)
     await db_session.commit()
 
-    response = await client.get(
-        "/api/v1/movies/?min_rating=8"
-    )
+    response = await client.get("/api/v1/movies/?min_rating=8")
 
     assert response.status_code == 200
     assert response.json()["total_items"] == 1
@@ -183,16 +173,11 @@ async def test_sort_movies_by_rating(client, db_session):
     db_session.add_all(movies)
     await db_session.commit()
 
-    response = await client.get(
-        "/api/v1/movies/?sort_by=rating&sort_order=desc"
-    )
+    response = await client.get("/api/v1/movies/?sort_by=rating&sort_order=desc")
 
     assert response.status_code == 200
 
-    names = [
-        movie["name"]
-        for movie in response.json()["movies"]
-    ]
+    names = [movie["name"] for movie in response.json()["movies"]]
 
     assert names == ["Movie B", "Movie A"]
 
@@ -220,9 +205,7 @@ async def test_filter_movies_by_release_date(
     db_session.add_all(movies)
     await db_session.commit()
 
-    response = await client.get(
-        "/api/v1/movies/?release_date_from=2020-01-01"
-    )
+    response = await client.get("/api/v1/movies/?release_date_from=2020-01-01")
 
     assert response.status_code == 200
     assert response.json()["total_items"] == 1

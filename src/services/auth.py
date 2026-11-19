@@ -31,28 +31,20 @@ async def login_user(
     data: UserLoginSchema,
     session: AsyncSession,
 ) -> dict:
-    result = await session.execute(
-        select(User).where(User.email == str(data.email))
-    )
+    result = await session.execute(select(User).where(User.email == str(data.email)))
     user = result.scalar_one_or_none()
 
     if user is None:
-        raise InvalidCredentialsError(
-            "Invalid email or password"
-        )
+        raise InvalidCredentialsError("Invalid email or password")
 
     if not verify_password(
         data.password,
         user.hashed_password,
     ):
-        raise InvalidCredentialsError(
-            "Invalid email or password"
-        )
+        raise InvalidCredentialsError("Invalid email or password")
 
     if not user.is_active:
-        raise InactiveAccountError(
-            "Account is not activated"
-        )
+        raise InactiveAccountError("Account is not activated")
 
     access_token = create_access_token(user.id)
     refresh_token = create_refresh_token(user.id)
@@ -83,9 +75,7 @@ async def logout_user(
         user_id = int(payload["sub"])
 
     except (jwt.InvalidTokenError, ValueError, KeyError) as error:
-        raise InvalidRefreshTokenError(
-            "Invalid or expired refresh token"
-        ) from error
+        raise InvalidRefreshTokenError("Invalid or expired refresh token") from error
 
     token_hash = hash_token(refresh_token)
 
@@ -99,9 +89,7 @@ async def logout_user(
     stored_token = result.scalar_one_or_none()
 
     if stored_token is None:
-        raise InvalidRefreshTokenError(
-            "Refresh token not found or already revoked"
-        )
+        raise InvalidRefreshTokenError("Refresh token not found or already revoked")
 
     await session.delete(stored_token)
     await session.commit()
@@ -116,9 +104,7 @@ async def refresh_access_token(
         user_id = int(payload["sub"])
 
     except (jwt.InvalidTokenError, ValueError, KeyError) as error:
-        raise InvalidRefreshTokenError(
-            "Invalid or expired refresh token"
-        ) from error
+        raise InvalidRefreshTokenError("Invalid or expired refresh token") from error
 
     token_hash = hash_token(refresh_token)
 
@@ -132,9 +118,7 @@ async def refresh_access_token(
     stored_token = result.scalar_one_or_none()
 
     if stored_token is None:
-        raise InvalidRefreshTokenError(
-            "Refresh token not found or revoked"
-        )
+        raise InvalidRefreshTokenError("Refresh token not found or revoked")
 
     expires_at = stored_token.expires_at
 
@@ -142,19 +126,13 @@ async def refresh_access_token(
         expires_at = expires_at.replace(tzinfo=timezone.utc)
 
     if expires_at <= datetime.now(timezone.utc):
-        raise InvalidRefreshTokenError(
-            "Refresh token has expired"
-        )
+        raise InvalidRefreshTokenError("Refresh token has expired")
 
-    result = await session.execute(
-        select(User).where(User.id == user_id)
-    )
+    user_result = await session.execute(select(User).where(User.id == user_id))
 
-    user = result.scalar_one_or_none()
+    user = user_result.scalar_one_or_none()
 
     if user is None or not user.is_active:
-        raise InvalidRefreshTokenError(
-            "User not found or inactive"
-        )
+        raise InvalidRefreshTokenError("User not found or inactive")
 
     return create_access_token(user.id)

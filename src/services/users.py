@@ -30,63 +30,50 @@ async def activate_user(
     token: str,
     session: AsyncSession,
 ) -> None:
-    result = await session.execute(
-        select(ActivationToken).where(
-            ActivationToken.token == token
-        )
+    activation_result = await session.execute(
+        select(ActivationToken).where(ActivationToken.token == token)
     )
 
-    activation = result.scalar_one_or_none()
+    activation = activation_result.scalar_one_or_none()
 
     if activation is None:
-        raise InvalidActivationTokenError(
-            "Invalid activation token"
-        )
+        raise InvalidActivationTokenError("Invalid activation token")
 
     expires_at = activation.expires_at
 
     if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(
-            tzinfo=timezone.utc
-        )
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
 
     if expires_at <= datetime.now(timezone.utc):
-        raise ExpiredActivationTokenError(
-            "Activation token has expired"
-        )
+        raise ExpiredActivationTokenError("Activation token has expired")
 
     user = await session.get(User, activation.user_id)
 
     if user is None:
-        raise InvalidActivationTokenError(
-            "User not found"
-        )
+        raise InvalidActivationTokenError("User not found")
 
     user.is_active = True
 
     await session.delete(activation)
     await session.commit()
 
+
 async def register_user(
     data: UserRegisterSchema,
     session: AsyncSession,
 ) -> tuple[User, str]:
-    result = await session.execute(
+    user_result = await session.execute(
         select(User).where(User.email == str(data.email))
     )
-    existing_user = result.scalar_one_or_none()
+    existing_user = user_result.scalar_one_or_none()
 
     if existing_user is not None:
-        raise UserAlreadyExistsError(
-            "User with this email already exists"
-        )
+        raise UserAlreadyExistsError("User with this email already exists")
 
-    result = await session.execute(
-        select(UserGroup).where(
-            UserGroup.name == UserGroupEnum.USER
-        )
+    group_result = await session.execute(
+        select(UserGroup).where(UserGroup.name == UserGroupEnum.USER)
     )
-    user_group = result.scalar_one_or_none()
+    user_group = group_result.scalar_one_or_none()
 
     if user_group is None:
         user_group = UserGroup(name=UserGroupEnum.USER)
@@ -107,8 +94,7 @@ async def register_user(
     activation_token = ActivationToken(
         user_id=user.id,
         token=activation_value,
-        expires_at=datetime.now(timezone.utc)
-        + timedelta(hours=24),
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
     )
     session.add(activation_token)
 
@@ -117,24 +103,21 @@ async def register_user(
 
     return user, activation_value
 
+
 async def resend_activation_token(
     email: str,
     session: AsyncSession,
 ) -> str | None:
-    result = await session.execute(
-        select(User).where(User.email == email)
-    )
-    user = result.scalar_one_or_none()
+    user_result = await session.execute(select(User).where(User.email == email))
+    user = user_result.scalar_one_or_none()
 
     if user is None or user.is_active:
         return None
 
-    result = await session.execute(
-        select(ActivationToken).where(
-            ActivationToken.user_id == user.id
-        )
+    activation_result = await session.execute(
+        select(ActivationToken).where(ActivationToken.user_id == user.id)
     )
-    activation = result.scalar_one_or_none()
+    activation = activation_result.scalar_one_or_none()
 
     new_token = secrets.token_urlsafe(32)
     expires_at = datetime.now(timezone.utc) + timedelta(hours=24)

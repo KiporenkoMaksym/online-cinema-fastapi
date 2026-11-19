@@ -24,26 +24,20 @@ class UserGroupEnum(str, enum.Enum):
 class UserGroup(Base):
     __tablename__ = "user_groups"
 
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True
-    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[UserGroupEnum] = mapped_column(
         Enum(UserGroupEnum),
         unique=True,
         nullable=False,
     )
 
-    users: Mapped[list["User"]] = relationship(
-        back_populates="group"
-    )
+    users: Mapped[list["User"]] = relationship(back_populates="group")
 
 
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True
-    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     email: Mapped[str] = mapped_column(
         String(255),
         unique=True,
@@ -76,9 +70,7 @@ class User(Base):
         nullable=False,
     )
 
-    group: Mapped["UserGroup"] = relationship(
-        back_populates="users"
-    )
+    group: Mapped["UserGroup"] = relationship(back_populates="users")
 
     activation_token: Mapped["ActivationToken | None"] = relationship(
         back_populates="user",
@@ -94,9 +86,7 @@ class User(Base):
 class ActivationToken(Base):
     __tablename__ = "activation_tokens"
 
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True
-    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id"),
         unique=True,
@@ -112,9 +102,7 @@ class ActivationToken(Base):
         nullable=False,
     )
 
-    user: Mapped["User"] = relationship(
-        back_populates="activation_token"
-    )
+    user: Mapped["User"] = relationship(back_populates="activation_token")
 
 
 class RefreshToken(Base):
@@ -142,6 +130,4 @@ class RefreshToken(Base):
         nullable=False,
     )
 
-    user: Mapped["User"] = relationship(
-        back_populates="refresh_tokens"
-    )
+    user: Mapped["User"] = relationship(back_populates="refresh_tokens")

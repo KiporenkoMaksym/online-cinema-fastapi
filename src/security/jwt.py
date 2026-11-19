@@ -18,7 +18,7 @@ class JWTSettings(BaseSettings):
     )
 
 
-settings = JWTSettings()
+settings = JWTSettings()  # type: ignore[call-arg]
 
 
 def create_access_token(user_id: int) -> str:
@@ -28,9 +28,7 @@ def create_access_token(user_id: int) -> str:
         "sub": str(user_id),
         "type": "access",
         "iat": now,
-        "exp": now + timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-        ),
+        "exp": now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     }
 
     return jwt.encode(
@@ -62,9 +60,7 @@ def create_refresh_token(user_id: int) -> str:
         "type": "refresh",
         "jti": secrets.token_hex(16),
         "iat": now,
-        "exp": now + timedelta(
-            days=settings.REFRESH_TOKEN_EXPIRE_DAYS
-        ),
+        "exp": now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
     }
 
     return jwt.encode(
@@ -83,14 +79,10 @@ def decode_refresh_token(token: str) -> dict:
         token,
         settings.JWT_SECRET_KEY,
         algorithms=[settings.JWT_ALGORITHM],
-        options={
-            "require": ["sub", "exp", "type", "jti"]
-        },
+        options={"require": ["sub", "exp", "type", "jti"]},
     )
 
     if payload.get("type") != "refresh":
-        raise jwt.InvalidTokenError(
-            "Invalid token type"
-        )
+        raise jwt.InvalidTokenError("Invalid token type")
 
     return payload

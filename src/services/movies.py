@@ -9,7 +9,9 @@ from src.database.models.movies import Movie
 from src.schemas.movies import (
     MovieListItemSchema,
     MovieListResponseSchema,
-    MovieDetailSchema, MovieUpdateSchema, MovieCreateSchema,
+    MovieDetailSchema,
+    MovieUpdateSchema,
+    MovieCreateSchema,
 )
 
 
@@ -21,9 +23,7 @@ async def get_movies(
     min_rating: float | None = None,
     release_date_from: date | None = None,
     release_date_to: date | None = None,
-    sort_by: Literal[
-        "id", "name", "release_date", "rating"
-    ] = "id",
+    sort_by: Literal["id", "name", "release_date", "rating"] = "id",
     sort_order: Literal["asc", "desc"] = "asc",
 ) -> MovieListResponseSchema:
 
@@ -39,23 +39,15 @@ async def get_movies(
         )
 
     if min_rating is not None:
-        filters.append(
-            Movie.rating >= min_rating
-        )
+        filters.append(Movie.rating >= min_rating)
 
     if release_date_from is not None:
-        filters.append(
-            Movie.release_date >= release_date_from
-        )
+        filters.append(Movie.release_date >= release_date_from)
 
     if release_date_to is not None:
-        filters.append(
-            Movie.release_date <= release_date_to
-        )
+        filters.append(Movie.release_date <= release_date_to)
 
-    count_result = await session.execute(
-        select(func.count(Movie.id)).where(*filters)
-    )
+    count_result = await session.execute(select(func.count(Movie.id)).where(*filters))
 
     total_items = count_result.scalar_one()
     total_pages = ceil(total_items / per_page)
@@ -69,40 +61,26 @@ async def get_movies(
 
     sort_column = sort_columns[sort_by]
 
-    if sort_order == "desc":
-        sort_column = sort_column.desc()
-    else:
-        sort_column = sort_column.asc()
+    order_expression = sort_column.desc() if sort_order == "desc" else sort_column.asc()
 
     offset = (page - 1) * per_page
 
     result = await session.execute(
         select(Movie)
         .where(*filters)
-        .order_by(sort_column, Movie.id)
+        .order_by(order_expression, Movie.id)
         .offset(offset)
         .limit(per_page)
     )
 
     movies = result.scalars().all()
 
-    prev_page = (
-        page - 1
-        if 1 < page <= total_pages
-        else None
-    )
+    prev_page = page - 1 if 1 < page <= total_pages else None
 
-    next_page = (
-        page + 1
-        if page < total_pages
-        else None
-    )
+    next_page = page + 1 if page < total_pages else None
 
     return MovieListResponseSchema(
-        movies=[
-            MovieListItemSchema.model_validate(movie)
-            for movie in movies
-        ],
+        movies=[MovieListItemSchema.model_validate(movie) for movie in movies],
         total_items=total_items,
         total_pages=total_pages,
         prev_page=prev_page,
@@ -114,9 +92,7 @@ async def get_movie_by_id(
     session: AsyncSession,
     movie_id: int,
 ) -> MovieDetailSchema | None:
-    result = await session.execute(
-        select(Movie).where(Movie.id == movie_id)
-    )
+    result = await session.execute(select(Movie).where(Movie.id == movie_id))
 
     movie = result.scalar_one_or_none()
 

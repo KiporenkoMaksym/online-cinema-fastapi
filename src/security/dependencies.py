@@ -9,14 +9,11 @@ from src.database.models.users import User, UserGroupEnum, UserGroup
 from src.database.session import get_db
 from src.security.jwt import decode_access_token
 
-
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(
-        bearer_scheme
-    ),
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     session: AsyncSession = Depends(get_db),
 ) -> User:
     unauthorized = HTTPException(
@@ -34,9 +31,7 @@ async def get_current_user(
     except (jwt.InvalidTokenError, ValueError, KeyError):
         raise unauthorized
 
-    result = await session.execute(
-        select(User).where(User.id == user_id)
-    )
+    result = await session.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
 
     if user is None or not user.is_active:
