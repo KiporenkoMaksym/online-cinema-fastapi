@@ -1,0 +1,50 @@
+name: Online Cinema CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Run automated tests
+    runs-on: ubuntu-latest
+
+    env:
+      JWT_SECRET_KEY: ci-only-secret-key-not-for-production
+      JWT_ALGORITHM: HS256
+      DATABASE_URL: sqlite+aiosqlite:///./ci.db
+      SMTP_HOST: localhost
+      SMTP_PORT: "1025"
+      CELERY_BROKER_URL: redis://localhost:6379/0
+      CELERY_RESULT_BACKEND: redis://localhost:6379/1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install Poetry
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install poetry==2.5.1
+
+      - name: Install project dependencies
+        run: |
+          poetry config virtualenvs.create false
+          poetry install --no-root --with dev --no-interaction
+
+      - name: Run tests with coverage
+        run: |
+          python -m pytest tests/ -v --cov=src --cov-report=term-missing
