@@ -211,3 +211,32 @@ async def get_me(
         "email": current_user.email,
         "is_active": current_user.is_active,
     }
+
+
+@router.post(
+    "/token/refresh/",
+    response_model=AccessTokenResponseSchema,
+    summary="Refresh access token",
+    responses={
+        401: {"description": "Invalid or revoked refresh token"},
+    },
+)
+async def refresh_token_endpoint(
+    data: RefreshTokenRequestSchema,
+    session: AsyncSession = Depends(get_db),
+):
+    try:
+        access_token = await refresh_access_token(
+            refresh_token=data.refresh_token,
+            session=session,
+        )
+
+    except InvalidRefreshTokenError as error:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(error),
+        ) from error
+
+    return AccessTokenResponseSchema(
+        access_token=access_token,
+    )

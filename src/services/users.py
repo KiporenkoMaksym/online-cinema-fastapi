@@ -43,7 +43,14 @@ async def activate_user(
             "Invalid activation token"
         )
 
-    if activation.expires_at <= datetime.now(timezone.utc):
+    expires_at = activation.expires_at
+
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(
+            tzinfo=timezone.utc
+        )
+
+    if expires_at <= datetime.now(timezone.utc):
         raise ExpiredActivationTokenError(
             "Activation token has expired"
         )
