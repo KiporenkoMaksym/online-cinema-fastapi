@@ -21,4 +21,4 @@ jobs:
       - name: Check EC2 connectivity
         run: |
           tailscale status
-          tailscale ping -c 3 100.109.225.29
+          tailscale ping --tsmp --until-direct=false -c 3 100.109.225.29
