@@ -1,4 +1,34 @@
 services:
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: online-cinema-api:local
+    container_name: online_cinema_api
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      DATABASE_URL: postgresql+asyncpg://cinema_user:cinema_local_password@db:5432/online_cinema
+      SMTP_HOST: mailhog
+      SMTP_PORT: "1025"
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+
+    ports:
+      - "127.0.0.1:8001:8000"
+
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      mailhog:
+        condition: service_started
+
   db:
     image: postgres:16-alpine
     container_name: online_cinema_db
