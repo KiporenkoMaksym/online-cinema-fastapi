@@ -55,6 +55,9 @@ poetry run uvicorn src.main:app --reload
 
 poetry run pytest tests/ -v
 ```
+Login and password for accessing the secured Swagger
+login: cinema_mentor
+password: super1602
 
 ## Demo
 
