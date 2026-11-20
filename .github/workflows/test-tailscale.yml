@@ -18,7 +18,13 @@ jobs:
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
 
+
       - name: Check EC2 connectivity
         run: |
           tailscale status
-          tailscale ping --tsmp --until-direct=false -c 3 100.109.225.29
+          tailscale ping --until-direct=false -c 3 100.109.225.29
+
+      - name: Check SSH port over Tailscale
+        run: |
+          timeout 10 bash -c 'echo > /dev/tcp/100.109.225.29/22'
+          echo "EC2 SSH port is reachable"
