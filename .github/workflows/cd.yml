@@ -1,0 +1,62 @@
+
+name: Online Cinema CD
+
+on:
+  workflow_run:
+    workflows: ["Online Cinema CI"]
+    types:
+      - completed
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: online-cinema-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to AWS EC2
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_branch == 'master'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          ssh-keyscan -T 10 -t ed25519 100.109.225.29 \
+            > ~/.ssh/known_hosts
+
+          ssh-keygen -lf ~/.ssh/known_hosts -E sha256 \
+            | grep -F 'SHA256:YDFMoRwpEkoQLYNhXw4NEZux1O0bzts0mvVH/FQR3f0'
+
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy Online Cinema
+        run: |
+          ssh -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -i ~/.ssh/id_ed25519 \
+            deploy@100.109.225.29 \
+            "sudo -n /usr/local/sbin/deploy-online-cinema"
